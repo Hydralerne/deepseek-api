@@ -23,7 +23,9 @@ export const sendMessage = async (text, chat = {}, callback) => {
     }
     const response = await requestChatStream(payload, text)
     return streamResponse(response, (chunk) => {
-        callback(chunk)
+        if(chunk?.length > 0){
+            callback(chunk)
+        }
         if (chunk.message_id && currentChat) {
             currentChat.last_id = chunk.message_id
         }
