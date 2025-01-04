@@ -34,6 +34,7 @@ export const message = async (chatID) => {
             body: JSON.stringify({ agent: 'chat' })
         })
         const data = await response.json()
+        console.log(data)
         const chatID = data.data.biz_data.id
         chats[id] = chatID
         return chatID
@@ -42,3 +43,6 @@ export const message = async (chatID) => {
     }
 }
 
+(async () => {
+    const data = await createNewChat('test','sz61Bfyihpenw53WnvDsDVvh3MYS1wPqwxJaNLxaGh5uHNEI+AxWvghViBvzSRlQ')
+})
