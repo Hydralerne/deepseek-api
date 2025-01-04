@@ -1,48 +1,35 @@
+import { requestChatStream } from "./utils/requests.js"
+import { streamResponse } from "./utils/streams.js"
+import { chats, createNewChat } from "./utils/chats.js"
 
-export const chats = {}
+export { requestChatStream, streamResponse, createNewChat, chats }
 
-export const createNewChat = async (id, token) => {
-    try {
-        let cookies = null
-        const response = await fetch('https://chat.deepseek.com/api/v0/chat_session/create', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ agent: 'chat' })
-        })
-        const data = await response.json()
-        const chatID = data.data.biz_data.id
-        chats[id] = { id: chatID, token, cookies }
-        return chatID
-    } catch (e) {
-        return { error: e.message }
+export const sendMessage = async (text, chat = {}, callback) => {
+    if (!chat.id) {
+        throw new Error('Chat id missed')
     }
-}
-
-export const message = async (chatID) => {
-    try {
-        if (!chats[chatID]) {
-            return { error: 'chat_not_found' }
+    const currentChat = chats.get(id)
+    if (!currentChat) {
+        console.error('Warning: Chat id is not registered in chats, please create one first')
+    }
+    if (!chat.token) {
+        throw new Error('Token missed')
+    }
+    const payload = {
+        ...chat
+    }
+    if (currentChat?.last_id && !chat?.parent_id) {
+        payload.parent_id = currentChat?.last_id
+    }
+    const response = await requestChatStream(payload, text)
+    return streamResponse(response, (chunk) => {
+        callback(chunk)
+        if (chunk.message_id && currentChat) {
+            currentChat.last_id = chunk.message_id
         }
-        const response = await fetch('https://chat.deepseek.com/api/v0/chat/completion', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Cookie
-            },
-            body: JSON.stringify({ agent: 'chat' })
-        })
-        const data = await response.json()
-        console.log(data)
-        const chatID = data.data.biz_data.id
-        chats[id] = chatID
-        return chatID
-    } catch (e) {
-        return { error: e.message }
-    }
+    }).then((data) => {
+        return data
+    }).catch(error => {
+        return error
+    })
 }
-
-(async () => {
-    const data = await createNewChat('test','sz61Bfyihpenw53WnvDsDVvh3MYS1wPqwxJaNLxaGh5uHNEI+AxWvghViBvzSRlQ')
-})
