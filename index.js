@@ -8,7 +8,7 @@ export const sendMessage = async (text, chat = {}, callback) => {
     if (!chat.id) {
         throw new Error('Chat id missed')
     }
-    const currentChat = chats.get(id)
+    const currentChat = chats.get(chat.id)
     if (!currentChat) {
         console.error('Warning: Chat id is not registered in chats, please create one first')
     }
