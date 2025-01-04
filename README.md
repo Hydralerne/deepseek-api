@@ -149,6 +149,9 @@ import { createNewChat, sendMessage } from 'deepseek-api';
 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
+## Future Development
+This package currently retrieves raw JSON responses directly from the DeepSeek API. We are actively working on enhancing the library to parse this data and provide a user-friendly interface that mimics a real chat experience. Stay tuned for updates!
+
 ## Contributions
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/hydralerne/deepseek-api/issues).
