@@ -1,4 +1,3 @@
-
 import { getAgent } from "../lib/randomAgents.js";
 
 export const RequestHeaders = (agent) => {
@@ -10,7 +9,6 @@ export const RequestHeaders = (agent) => {
         'Connection': 'keep-alive',
         'Host': 'https://chat.deepseek.com',
     }
-    // 'Cookie': '__cf_bm=fsJIUz3t_v2KhHqkgkunnFEFvB16y1bWB43AiELMvWE-1736015167-1.0.1.1-hdwTAL.Jq.qAS0eRYYohvDWFXVFNmq62Xmq3AYyUvktokL90oacdET23mUpzDgO83My8V9RFJ5KlSjs54JFbGQ; HWWAFSESID=95f6b124fea1820df71; HWWAFSESTIME=1736003156412'
 };
 
 export const requestChatStream = async (chat = {}, text, isThinkinEnabled = false, isSearchEnabled = false) => {
@@ -33,17 +31,34 @@ export const requestChatStream = async (chat = {}, text, isThinkinEnabled = fals
             "challenge_response": null
         });
 
-
         const response = await fetch(url, {
             method: 'POST',
-            headers: headers,
-            body: body
-        })
+            headers,
+            body
+        });
 
-        return response
+        // Handle rate limiting response from DeepSeek
+        if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After');
+            return { 
+                error: 'rate_limit_exceeded',
+                retryAfter: retryAfter ? parseInt(retryAfter) : 60,
+                details: await response.text()
+            };
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            return { 
+                error: `Request failed with status ${response.status}`,
+                details: errorText
+            };
+        }
+
+        return response;
 
     } catch (e) {
-        console.error(e);
-        return { error: e.message };
+        console.error('Request failed:', e);
+        return { error: e.message, details: e.stack };
     }
 };

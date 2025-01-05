@@ -1,9 +1,15 @@
 export const streamResponse = (response, callback = () => { }) => {
     return new Promise((resolve, reject) => {
         const chunks = [];
+        
         if (!response.ok) {
-            return reject(`HTTP error! status: ${response.status}`);
+            return reject({
+                error: `Stream error`,
+                status: response.status,
+                details: response.statusText
+            });
         }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
@@ -28,7 +34,11 @@ export const streamResponse = (response, callback = () => { }) => {
                                     data = JSON.parse(jsonString);
                                 }
                             } catch (error) {
-                                console.error('Error parsing JSON:', error);
+                                console.error('Error parsing stream data:', error);
+                                data = { 
+                                    error: 'stream_parse_error',
+                                    details: error.message
+                                };
                             }
                         }
                     }
@@ -39,7 +49,10 @@ export const streamResponse = (response, callback = () => { }) => {
 
                 readStream();
             }).catch(error => {
-                reject(error);
+                reject({
+                    error: 'stream_read_error',
+                    details: error.message
+                });
             });
         };
 
