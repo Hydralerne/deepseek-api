@@ -1,9 +1,17 @@
+import { parseStreamResponse } from './parser.js';
+
 export const streamResponse = (response, callback = () => { }) => {
     return new Promise((resolve, reject) => {
         const chunks = [];
+        
         if (!response.ok) {
-            return reject(`HTTP error! status: ${response.status}`);
+            return reject({
+                error: `Stream error`,
+                status: response.status,
+                details: response.statusText
+            });
         }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
@@ -17,18 +25,26 @@ export const streamResponse = (response, callback = () => { }) => {
                 const chunk = decoder.decode(value, { stream: true });
 
                 chunk.split('\n').forEach(line => {
-                    let data = line
+                    let data = line;
                     if (line.startsWith('data:')) {
                         const jsonString = line.slice(5).trim();
                         if (jsonString) {
                             try {
-                                if (jsonString == '[DONE]') {
-                                    data = { done: true }
+                                if (jsonString === '[DONE]') {
+                                    data = { done: true };
                                 } else {
-                                    data = JSON.parse(jsonString);
+                                    const rawData = JSON.parse(jsonString);
+                                    // Parse the response into a more user-friendly format
+                                    data = parseStreamResponse(rawData);
                                 }
                             } catch (error) {
-                                console.error('Error parsing JSON:', error);
+                                console.error('Error parsing stream data:', error);
+                                console.error('Malformed JSON:', jsonString); // Log the problematic JSON
+                                data = { 
+                                    type: 'error',
+                                    error: 'stream_parse_error',
+                                    details: error.message
+                                };
                             }
                         }
                     }
@@ -39,7 +55,11 @@ export const streamResponse = (response, callback = () => { }) => {
 
                 readStream();
             }).catch(error => {
-                reject(error);
+                reject({
+                    type: 'error',
+                    error: 'stream_read_error',
+                    details: error.message
+                });
             });
         };
 

@@ -15,6 +15,7 @@ npm install deepseek-api
 - **Send Messages**: Interact with DeepSeek chats by sending messages.
 - **Chat Streams**: Stream responses in real-time.
 - **Chat Management**: Create and manage chat sessions.
+- **Structured Data**: Well-formatted response objects for easy integration.
 
 ## Important Note
 
@@ -150,11 +151,125 @@ import { createNewChat, sendMessage } from 'deepseek-api';
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Future Development
+
 This package currently retrieves raw JSON responses directly from the DeepSeek API. We are actively working on enhancing the library to parse this data and provide a user-friendly interface that mimics a real chat experience. Stay tuned for updates!
 
 ## Contributions
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/hydralerne/deepseek-api/issues).
 
----
+## Response Format
 
+The library now provides structured response objects for different types of messages:
+
+### Message Response
+
+```javascript
+{
+    type: 'message',
+    content: 'The message content',
+    id: 'message-id',
+    role: 'assistant',
+    metadata: {
+        model: 'model-name',
+        usage: { /* token usage stats */ },
+        finish_reason: 'stop'
+    },
+    timestamp: '2024-01-01T00:00:00.000Z'
+}
+```
+
+### Other Response Types
+
+```javascript
+// Done Response
+{
+    type: 'done',
+    timestamp: '2024-01-01T00:00:00.000Z'
+}
+
+// Error Response
+{
+    type: 'error',
+    error: 'error_type',
+    details: 'Error details',
+    timestamp: '2024-01-01T00:00:00.000Z'
+}
+
+// Thinking State
+{
+    type: 'thinking',
+    status: 'thinking_status',
+    timestamp: '2024-01-01T00:00:00.000Z'
+}
+
+// Search Results
+{
+    type: 'search',
+    results: [/* search results */],
+    timestamp: '2024-01-01T00:00:00.000Z'
+}
+```
+
+## Enhanced Usage Example
+
+Here's how to use the enhanced parsing features:
+
+```javascript
+import { createNewChat, sendMessage } from 'deepseek-api';
+
+(async () => {
+    const token = 'your-token-here';
+    const chatID = await createNewChat(token);
+
+    if (typeof chatID === 'string') {
+        await sendMessage('Write a JavaScript function', {
+            id: chatID,
+            token: token
+        }, (response) => {
+            switch(response.type) {
+                case 'message':
+                    console.log('Content:', response.content);
+                    break;
+
+                case 'thinking':
+                    console.log('AI is thinking...');
+                    break;
+
+                case 'error':
+                    console.error('Error:', response.error);
+                    break;
+
+                case 'done':
+                    console.log('Response complete');
+                    break;
+            }
+        });
+    }
+})();
+```
+
+## Parsing Features
+
+### Code Block Parsing
+
+- Automatically extracts code blocks from messages
+- Identifies programming languages
+- Separates code from regular text
+
+### Metadata
+
+- Model information
+- Token usage statistics
+- Completion status
+- Timestamps for all events
+
+### Response Types
+
+- `message`: Regular message content
+- `thinking`: AI processing status
+- `search`: Search results when enabled
+- `error`: Error information
+- `done`: Completion indicator
+
+---
