@@ -15,23 +15,29 @@ export const sendMessage = async (text, chat = {}, callback) => {
     if (!chat.token) {
         throw new Error('Token missed')
     }
+
     const payload = {
-        ...chat
+        ...chat,
+        parent_id: chat.parent_id || currentChat?.last_id
     }
-    if (currentChat?.last_id && !chat?.parent_id) {
-        payload.parent_id = currentChat?.last_id
+
+    try {
+        const response = await requestChatStream(payload, text)
+        
+        // Enhanced callback wrapper to handle parsed messages
+        const enhancedCallback = (data) => {
+            if (data.type === 'message' && currentChat) {
+                currentChat.last_id = data.id
+            }
+            callback(data)
+        }
+
+        return streamResponse(response, enhancedCallback)
+    } catch (error) {
+        return {
+            type: 'error',
+            error: error.message,
+            details: error.stack
+        }
     }
-    const response = await requestChatStream(payload, text)
-    return streamResponse(response, (chunk) => {
-        if(chunk?.length > 0){
-            callback(chunk)
-        }
-        if (chunk.message_id && currentChat) {
-            currentChat.last_id = chunk.message_id
-        }
-    }).then((data) => {
-        return data
-    }).catch(error => {
-        return error
-    })
 }
